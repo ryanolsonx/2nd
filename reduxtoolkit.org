@@ -1,0 +1,73 @@
+** Async Thunk
+
+#+BEGIN_SRC javascript
+  const fetchUserById = createAsyncThunk(
+    'users/fetchByIdStatus',
+    async (userId, thunkAPI) => {
+      const response = await userAPI.fetchById(userId)
+      return response.data
+    }
+  )
+
+  // Then, handle actions in your reducers:
+  const usersSlice = createSlice({
+    name: 'users',
+    initialState: { isLoading: false, users: [] },
+    reducers: {
+      // standard reducer logic, with auto-generated action types per reducer
+    },
+    extraReducers: {
+      [fetchUserById.pending](state) {
+        state.isLoading = true;
+      },
+      [fetchUserById.fulfilled](state, action) {
+        state.isLoading = false;
+        state.users = action.payload;
+      },
+      [fetchUserById.rejected](state) {
+        state.isLoading = false;
+      },
+    },
+  })
+#+END_SRC
+
+** Configure Store
+
+Simple example:
+
+#+BEGIN_SRC javascript
+import { configureStore } from '@reduxjs/toolkit'
+import rootReducer from './reducers'
+
+const store = configureStore({
+  reducer: rootReducer,
+})
+
+export default store
+#+END_SRC
+
+Advanced example:
+
+#+BEGIN_SRC javascript
+import { configureStore } from '@reduxjs/toolkit'
+
+import monitorReducersEnhancer from './enhancers/monitorReducers'
+import loggerMiddleware from './middleware/logger'
+import rootReducer from './reducers'
+
+export default function configureAppStore(preloadedState) {
+  const store = configureStore({
+    reducer: rootReducer,
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(loggerMiddleware),
+    preloadedState,
+    enhancers: [monitorReducersEnhancer],
+  })
+
+  if (process.env.NODE_ENV !== 'production' && module.hot) {
+    module.hot.accept('./reducers', () => store.replaceReducer(rootReducer))
+  }
+
+  return store
+}
+#+END_SRC
